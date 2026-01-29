@@ -4,6 +4,7 @@ load("@tools_codex//codex:defs.bzl", "CODEX_TOOLCHAIN_TYPE")
 
 def _codex_impl(ctx):
     """Implementation of the codex rule."""
+    local_auth = ctx.attr.local_auth[LocalAuthInfo].value
     toolchain = ctx.toolchains[CODEX_TOOLCHAIN_TYPE]
     codex_binary = toolchain.codex_info.binary
 
@@ -35,12 +36,22 @@ def _codex_impl(ctx):
 
     args.add(full_prompt)
 
+    # If CODEX_LOCAL_AUTH is set, run locally without sandbox and use real HOME
+    # Otherwise, run sandboxed with a fake HOME
+    if local_auth:
+        env = None
+        execution_requirements = {"local": "1"}
+    else:
+        env = {"HOME": ".home"}
+        execution_requirements = None
+
     ctx.actions.run(
         executable = codex_binary,
         arguments = [args],
         inputs = ctx.files.srcs,
         outputs = [out],
-        env = {"HOME": ".home"},
+        env = env,
+        execution_requirements = execution_requirements,
         use_default_shell_env = True,
         mnemonic = "Codex",
         progress_message = "Running Codex: %s" % ctx.label,
@@ -62,7 +73,22 @@ codex = rule(
         "out": attr.string(
             doc = "Output filename. Defaults to <name>.txt if not specified.",
         ),
+        "local_auth": attr.label(
+            default = "@rules_codex//:local_auth",
+            doc = "Flag to enable local auth mode (runs without sandbox, uses real HOME).",
+        ),
     },
     toolchains = [CODEX_TOOLCHAIN_TYPE],
     doc = "Runs Codex with the given prompt and input files to produce an output.",
+)
+
+# Flag for enabling local auth mode
+LocalAuthInfo = provider(fields = ["value"])
+
+def _local_auth_flag_impl(ctx):
+    return LocalAuthInfo(value = ctx.build_setting_value)
+
+local_auth_flag = rule(
+    implementation = _local_auth_flag_impl,
+    build_setting = config.bool(flag = True),
 )

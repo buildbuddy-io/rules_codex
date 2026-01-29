@@ -1,0 +1,8 @@
+# Enable bzlmod
+common --enable_bzlmod
+
+# Pass through the Codex API key from environment
+common --action_env=CODEX_API_KEY
+
+# Optional: Import user-specific settings (gitignored)
+try-import %workspace%/user.bazelrc

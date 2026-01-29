@@ -11,14 +11,14 @@ bazel_dep(name = "rules_codex", version = "0.1.0")
 git_override(
     module_name = "rules_codex",
     remote = "https://github.com/buildbuddy-rules/rules_codex.git",
-    commit = "ba0190f02385909d7bcaa760ecbd87ffd7bcc862",
+    commit = "ce8afcc557bc709b7253c173bf0e1ae74f9d1d11",
 )
 
 bazel_dep(name = "tools_codex", version = "0.1.0")
 git_override(
     module_name = "tools_codex",
     remote = "https://github.com/buildbuddy-rules/tools_codex.git",
-    commit = "b6698855dd26b3ce426a4dfe4b59a6cc069cb8b8",
+    commit = "7500f7420600c3ced8ac4426dfb03cfbdef6d7be",
 )
 ```
 

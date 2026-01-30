@@ -11,7 +11,7 @@ def _codex_test_impl(ctx):
 
     # Create the test script and result file
     script = ctx.actions.declare_file(ctx.label.name + ".sh")
-    result_file = ctx.label.name + "_result.txt"
+    result_file = "/tmp/" + ctx.label.name + "_result.txt"
 
     # Build the prompt
     prompt = ctx.attr.prompt
@@ -26,7 +26,7 @@ def _codex_test_impl(ctx):
         full_prompt = "Input files: " + ", ".join(src_paths) + ". " + full_prompt
 
     # Add instructions for the agent to write PASS/FAIL result
-    full_prompt = full_prompt + " Write the result to " + result_file + ". The first line must be exactly PASS or FAIL. Following lines should explain why the test passed or failed."
+    full_prompt = full_prompt + " Write PASS or FAIL to " + result_file + " - the file must contain just PASS or FAIL, nothing else."
 
     # If local_auth is enabled, run test locally without sandbox and use real HOME
     # Otherwise, run sandboxed with a fake HOME
@@ -41,7 +41,7 @@ def _codex_test_impl(ctx):
     script_content = """#!/bin/bash
 {env_vars}{codex_binary} exec --skip-git-repo-check --yolo {prompt}
 if [ ! -f {result_file} ]; then
-    echo "FAIL: Result file was not created"
+    echo "FAIL: Result file was not created at {result_file}"
     exit 1
 fi
 cat {result_file}

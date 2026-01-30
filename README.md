@@ -25,7 +25,7 @@ git_override(
 ## Usage
 
 ```python
-load("@rules_codex//codex:defs.bzl", "codex")
+load("@rules_codex//codex:defs.bzl", "codex", "codex_test")
 
 # Generate documentation from source files
 codex(
@@ -50,6 +50,13 @@ codex(
     ],
     prompt = "Summarize the key points from these files.",
     out = "summary.md",
+)
+
+# Test that documentation is accurate
+codex_test(
+    name = "validate_readme",
+    srcs = ["README.md"],
+    prompt = "Walk through this README and verify all the steps work correctly.",
 )
 ```
 
@@ -125,6 +132,16 @@ Runs Codex with the given prompt and input files to produce an output.
 | `srcs` | `label_list` | Input files to be processed by the prompt. |
 | `prompt` | `string` | **Required.** The prompt to send to Codex. |
 | `out` | `string` | Output filename. Defaults to `<name>.txt`. |
+| `local_auth` | `label` | Flag to enable local auth mode. Defaults to `@rules_codex//:local_auth`. |
+
+### `codex_test`
+
+Runs Codex with the given prompt as a Bazel test. The agent evaluates the prompt and writes a result file with `PASS` or `FAIL` on the first line, followed by an explanation.
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `srcs` | `label_list` | Input files to be processed by the prompt. |
+| `prompt` | `string` | **Required.** The prompt describing what to test and the pass/fail criteria. |
 | `local_auth` | `label` | Flag to enable local auth mode. Defaults to `@rules_codex//:local_auth`. |
 
 ## Requirements

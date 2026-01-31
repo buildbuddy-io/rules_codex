@@ -30,14 +30,16 @@ def _codex_run_impl(ctx):
     elif ctx.attr.out:
         full_prompt = full_prompt + " Write the output to " + ctx.attr.out
 
+    subcommand = "" if ctx.attr.interactive else "exec --skip-git-repo-check"
     script = ctx.actions.declare_file(ctx.label.name + ".sh")
     script_content = """#!/bin/bash
 set -e
 SCRIPT_DIR="$(pwd)"
 cd "$BUILD_WORKING_DIRECTORY"
-exec "$SCRIPT_DIR/{codex_binary}" exec --skip-git-repo-check --yolo {prompt} "$@"
+exec "$SCRIPT_DIR/{codex_binary}" {subcommand} --yolo {prompt} "$@"
 """.format(
         codex_binary = codex_binary.short_path,
+        subcommand = subcommand,
         prompt = _shell_quote(full_prompt),
     )
     ctx.actions.write(
@@ -68,6 +70,10 @@ codex_run = rule(
         ),
         "outs": attr.string_list(
             doc = "Multiple output filenames.",
+        ),
+        "interactive": attr.bool(
+            default = False,
+            doc = "If True, runs in interactive mode.",
         ),
     },
     executable = True,

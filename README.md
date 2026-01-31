@@ -1,8 +1,6 @@
 # rules_codex
 
-Bazel rules for running Codex prompts as build actions. Built on top of [tools_codex](https://github.com/buildbuddy-rules/tools_codex).
-
-If you want a hermetic Codex toolchain that you can use to write your own rules, see [tools_codex](https://github.com/buildbuddy-rules/tools_codex).
+Bazel rules for running Codex prompts as build & test actions. Built on top of [tools_codex](https://github.com/buildbuddy-rules/tools_codex), a hermetic, cross-platform Codex toolchain that you can use to write your own ruleset.
 
 ## Setup
 

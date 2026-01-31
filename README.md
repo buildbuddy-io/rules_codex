@@ -52,17 +52,18 @@ codex(
     out = "summary.md",
 )
 
+# Generate a complete static marketing website from a README
+codex(
+    name = "website",
+    srcs = ["README.md"],
+    prompt = "Generate a complete static marketing website based on this README.",
+)
+
 # Test that documentation is accurate
 codex_test(
     name = "validate_readme",
     srcs = ["README.md"],
     prompt = "Walk through this README and verify all the steps work correctly.",
-)
-
-codex(
-    name = "website",
-    srcs = ["README.md"],
-    prompt = "Generate a complete static marketing website based on this README.",
 )
 ```
 

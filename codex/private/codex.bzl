@@ -9,11 +9,17 @@ def _codex_impl(ctx):
     toolchain = ctx.toolchains[CODEX_TOOLCHAIN_TYPE]
     codex_binary = toolchain.codex_info.binary
 
-    # Determine output file
-    if ctx.attr.out:
-        out = ctx.actions.declare_file(ctx.attr.out)
+    # Determine outputs: outs (multiple files) > out (single file) > directory
+    if ctx.attr.outs:
+        outputs = [ctx.actions.declare_file(f) for f in ctx.attr.outs]
+        output_paths = ", ".join([f.path for f in outputs])
+        output_instruction = " Write the outputs to these files: " + output_paths
+    elif ctx.attr.out:
+        outputs = [ctx.actions.declare_file(ctx.attr.out)]
+        output_instruction = " Write the output to " + outputs[0].path
     else:
-        out = ctx.actions.declare_file(ctx.label.name + ".txt")
+        outputs = [ctx.actions.declare_directory(ctx.label.name)]
+        output_instruction = " Write the output to the directory at " + outputs[0].path
 
     # Build the prompt
     prompt = ctx.attr.prompt
@@ -33,7 +39,7 @@ def _codex_impl(ctx):
     full_prompt = prompt
     if src_paths:
         full_prompt = "Input files: " + ", ".join(src_paths) + ". " + full_prompt
-    full_prompt = full_prompt + " Write the output to " + out.path
+    full_prompt = full_prompt + output_instruction
 
     args.add(full_prompt)
 
@@ -50,7 +56,7 @@ def _codex_impl(ctx):
         executable = codex_binary,
         arguments = [args],
         inputs = ctx.files.srcs,
-        outputs = [out],
+        outputs = outputs,
         env = env,
         execution_requirements = execution_requirements,
         use_default_shell_env = True,
@@ -58,7 +64,7 @@ def _codex_impl(ctx):
         progress_message = "Running Codex: %s" % ctx.label,
     )
 
-    return [DefaultInfo(files = depset([out]))]
+    return [DefaultInfo(files = depset(outputs))]
 
 codex = rule(
     implementation = _codex_impl,
@@ -72,7 +78,10 @@ codex = rule(
             doc = "The prompt to send to Codex.",
         ),
         "out": attr.string(
-            doc = "Output filename. Defaults to <name>.txt if not specified.",
+            doc = "Output filename. If not specified, outputs to a directory.",
+        ),
+        "outs": attr.string_list(
+            doc = "Multiple output filenames. Takes precedence over out.",
         ),
         "local_auth": attr.label(
             default = "@rules_codex//:local_auth",

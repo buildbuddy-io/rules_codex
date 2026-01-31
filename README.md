@@ -1,6 +1,6 @@
 # rules_codex
 
-Bazel rules for running Codex prompts as build & test actions. Built on top of [tools_codex](https://github.com/buildbuddy-rules/tools_codex), a hermetic, cross-platform Codex toolchain that you can use to write your own ruleset.
+Bazel rules for running Codex prompts as build, test, and run actions. Built on top of [tools_codex](https://github.com/buildbuddy-rules/tools_codex), a hermetic, cross-platform Codex toolchain that you can use to write your own ruleset.
 
 ## Setup
 
@@ -25,7 +25,7 @@ git_override(
 ## Usage
 
 ```python
-load("@rules_codex//codex:defs.bzl", "codex", "codex_test")
+load("@rules_codex//codex:defs.bzl", "codex", "codex_run", "codex_test")
 
 # Generate documentation from source files
 codex(
@@ -57,6 +57,13 @@ codex(
     name = "website",
     srcs = ["README.md"],
     prompt = "Generate a complete static marketing website based on this README.",
+)
+
+# Interactively refactor code with `bazel run`
+codex_run(
+    name = "modernize",
+    srcs = glob(["src/**/*.py"]),
+    prompt = "Refactor this code to use modern Python 3.12 features like pattern matching and type hints.",
 )
 
 # Test that documentation is accurate
@@ -138,8 +145,20 @@ Runs Codex with the given prompt and input files to produce an output.
 |-----------|------|-------------|
 | `srcs` | `label_list` | Input files to be processed by the prompt. |
 | `prompt` | `string` | **Required.** The prompt to send to Codex. |
-| `out` | `string` | Output filename. Defaults to `<name>.txt`. |
+| `out` | `string` | Output filename. If not specified, outputs to a directory. |
+| `outs` | `string_list` | Multiple output filenames. Takes precedence over `out`. |
 | `local_auth` | `label` | Flag to enable local auth mode. Defaults to `@rules_codex//:local_auth`. |
+
+### `codex_run`
+
+Creates an executable that runs Codex with the given prompt. Use with `bazel run`.
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `srcs` | `label_list` | Input files to be processed by the prompt. |
+| `prompt` | `string` | **Required.** The prompt to send to Codex. |
+| `out` | `string` | Output filename to include in the prompt. |
+| `outs` | `string_list` | Multiple output filenames to include in the prompt. |
 
 ### `codex_test`
 

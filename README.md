@@ -1,3 +1,5 @@
+![rules_codex](rules_codex.png)
+
 # rules_codex
 
 Bazel rules for running Codex prompts as build, test, and run actions. Built on top of [tools_codex](https://github.com/buildbuddy-rules/tools_codex), a hermetic, cross-platform Codex toolchain that you can use to write your own ruleset.
@@ -182,3 +184,7 @@ Runs Codex with the given prompt as a Bazel test. The agent evaluates the prompt
 
 - Bazel 7.0+ with bzlmod enabled
 - Valid `CODEX_API_KEY` environment variable, or local authentication enabled
+
+## Acknowledgements
+
+Codex is a trademark of OpenAI.

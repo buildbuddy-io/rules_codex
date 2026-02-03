@@ -1,6 +1,6 @@
 """Codex rule that takes prompt inputs and produces outputs."""
 
-load("@tools_codex//codex:defs.bzl", "CODEX_TOOLCHAIN_TYPE")
+load(":toolchain.bzl", "CODEX_TOOLCHAIN_TYPE")
 load(":flags.bzl", "LocalAuthInfo")
 
 def _codex_impl(ctx):

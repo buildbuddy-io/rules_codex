@@ -1,12 +1,12 @@
 """Codex test rule that runs prompts and checks for PASS/FAIL results."""
 
-load("@tools_codex//codex:defs.bzl", "CODEX_TOOLCHAIN_TYPE")
+load(":toolchain.bzl", "CODEX_RUNTIME_TOOLCHAIN_TYPE")
 load(":flags.bzl", "LocalAuthInfo")
 
 def _codex_test_impl(ctx):
     """Implementation of the codex_test rule."""
     local_auth = ctx.attr.local_auth[LocalAuthInfo].value
-    toolchain = ctx.toolchains[CODEX_TOOLCHAIN_TYPE]
+    toolchain = ctx.toolchains[CODEX_RUNTIME_TOOLCHAIN_TYPE]
     codex_binary = toolchain.codex_info.binary
 
     # Create the test script and result file
@@ -91,6 +91,6 @@ codex_test = rule(
             doc = "Flag to enable local auth mode (runs without sandbox, uses real HOME).",
         ),
     },
-    toolchains = [CODEX_TOOLCHAIN_TYPE],
+    toolchains = [CODEX_RUNTIME_TOOLCHAIN_TYPE],
     doc = "Runs Codex with the given prompt. The agent writes PASS/FAIL and explanation to a result file.",
 )

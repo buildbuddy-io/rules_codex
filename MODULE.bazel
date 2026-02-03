@@ -1,11 +1,16 @@
+"""Bazel rules for Codex - OpenAI's AI coding CLI."""
+
 module(
     name = "rules_codex",
     version = "0.1.0",
 )
 
-bazel_dep(name = "tools_codex", version = "0.1.0")
-git_override(
-    module_name = "tools_codex",
-    remote = "https://github.com/buildbuddy-rules/tools_codex.git",
-    commit = "c2f356f781c3113902c9a93c5e7e2a18b1c6748f",
-)
+bazel_dep(name = "platforms", version = "1.0.0")
+
+# Set up the Codex CLI binary (downloads default version)
+codex = use_extension("//codex:extensions.bzl", "codex")
+codex.download()
+use_repo(codex, "codex_toolchains")
+
+# Register toolchains for all platforms
+register_toolchains("@codex_toolchains//:all")

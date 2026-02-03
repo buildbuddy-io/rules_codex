@@ -2,7 +2,7 @@
 
 # rules_codex
 
-Bazel rules for running Codex prompts as build, test, and run actions. Built on top of [tools_codex](https://github.com/buildbuddy-rules/tools_codex), a hermetic, cross-platform Codex toolchain that you can use to write your own ruleset.
+Bazel rules and hermetic toolchain for [Codex](https://github.com/openai/codex) - OpenAI's AI coding CLI. Run Codex prompts as build, test, and run actions, or use the toolchain to write your own rules.
 
 ## Setup
 
@@ -13,15 +13,28 @@ bazel_dep(name = "rules_codex", version = "0.1.0")
 git_override(
     module_name = "rules_codex",
     remote = "https://github.com/buildbuddy-rules/rules_codex.git",
-    commit = "d0125df65f10a3c371b9b86563a912ba027b1826",
+    commit = "COMMIT_SHA",
 )
+```
 
-bazel_dep(name = "tools_codex", version = "0.1.0")
-git_override(
-    module_name = "tools_codex",
-    remote = "https://github.com/buildbuddy-rules/tools_codex.git",
-    commit = "c795e1880a57cf03d643a91ba59cef05c1717f51",
-)
+The toolchain is automatically registered. By default, it downloads version `rust-v0.92.0` with SHA256 verification for reproducible builds.
+
+### Pinning a Codex version
+
+To pin a specific Codex CLI version:
+
+```starlark
+codex = use_extension("@rules_codex//codex:extensions.bzl", "codex")
+codex.download(version = "rust-v0.90.0")
+```
+
+### Using the latest version
+
+To always fetch the latest version from GitHub releases:
+
+```starlark
+codex = use_extension("@rules_codex//codex:extensions.bzl", "codex")
+codex.download(use_latest = True)
 ```
 
 ## Usage
@@ -179,6 +192,135 @@ Runs Codex with the given prompt as a Bazel test. The agent evaluates the prompt
 | `srcs` | `label_list` | Input files to be processed by the prompt. |
 | `prompt` | `string` | **Required.** The prompt describing what to test and the pass/fail criteria. |
 | `local_auth` | `label` | Flag to enable local auth mode. Defaults to `@rules_codex//:local_auth`. |
+
+## Toolchain API
+
+The rules above are built on a hermetic, cross-platform toolchain that you can use directly to write your own rules.
+
+### In genrule
+
+Use the toolchain in a genrule via `toolchains` and make variable expansion:
+
+```starlark
+load("@rules_codex//codex:defs.bzl", "CODEX_TOOLCHAIN_TYPE")
+
+genrule(
+    name = "my_genrule",
+    srcs = ["input.py"],
+    outs = ["output.md"],
+    cmd = """
+        export HOME=.home
+        $(CODEX_BINARY) exec --skip-git-repo-check --yolo \
+            'Read $(location input.py) and write API documentation to $@'
+    """,
+    toolchains = [CODEX_TOOLCHAIN_TYPE],
+)
+```
+
+The `$(CODEX_BINARY)` make variable expands to the path of the Codex binary.
+
+**Note:** The `export HOME=.home` line is required because Bazel runs genrules in a sandbox where the real home directory is not writable. Codex writes session files to `$HOME`, so redirecting it to a writable location within the sandbox prevents permission errors. The `--skip-git-repo-check` flag is needed since the sandbox is not a git repository, and `--yolo` allows Codex to read and write files without restrictions.
+
+### In custom rules
+
+Use the toolchain in your rule implementation:
+
+```starlark
+load("@rules_codex//codex:defs.bzl", "CODEX_TOOLCHAIN_TYPE")
+
+def _my_rule_impl(ctx):
+    toolchain = ctx.toolchains[CODEX_TOOLCHAIN_TYPE]
+    codex_binary = toolchain.codex_info.binary
+
+    out = ctx.actions.declare_file(ctx.label.name + ".md")
+    ctx.actions.run(
+        executable = codex_binary,
+        arguments = [
+            "exec",
+            "--skip-git-repo-check",
+            "--yolo",
+            "Read {} and write API documentation to {}".format(ctx.file.src.path, out.path),
+        ],
+        inputs = [ctx.file.src],
+        outputs = [out],
+        env = {"HOME": ".home"},
+        use_default_shell_env = True,
+    )
+    return [DefaultInfo(files = depset([out]))]
+
+my_rule = rule(
+    implementation = _my_rule_impl,
+    attrs = {
+        "src": attr.label(allow_single_file = True, mandatory = True),
+    },
+    toolchains = [CODEX_TOOLCHAIN_TYPE],
+)
+```
+
+### In tests
+
+For tests that need to run the Codex binary at runtime, use the runtime toolchain type. This ensures the binary matches the target platform where the test executes:
+
+```starlark
+load("@rules_codex//codex:defs.bzl", "CODEX_RUNTIME_TOOLCHAIN_TYPE")
+
+def _codex_test_impl(ctx):
+    toolchain = ctx.toolchains[CODEX_RUNTIME_TOOLCHAIN_TYPE]
+    codex_binary = toolchain.codex_info.binary
+
+    test_script = ctx.actions.declare_file(ctx.label.name + ".sh")
+    ctx.actions.write(
+        output = test_script,
+        content = """#!/bin/bash
+export HOME="$TEST_TMPDIR"
+{codex} --version
+""".format(codex = codex_binary.short_path),
+        is_executable = True,
+    )
+    return [DefaultInfo(
+        executable = test_script,
+        runfiles = ctx.runfiles(files = [codex_binary]),
+    )]
+
+codex_test = rule(
+    implementation = _codex_test_impl,
+    test = True,
+    toolchains = [CODEX_RUNTIME_TOOLCHAIN_TYPE],
+)
+```
+
+### Toolchain types
+
+There are two toolchain types depending on your use case:
+
+- **`CODEX_TOOLCHAIN_TYPE`** - Use for build-time actions (genrules, custom rules). Selected based on the execution platform. Use this when Codex's output isn't platform-specific.
+
+- **`CODEX_RUNTIME_TOOLCHAIN_TYPE`** - Use for tests or run targets where the Codex binary executes on the target platform.
+
+### Public API
+
+From `@rules_codex//codex:defs.bzl`:
+
+| Symbol | Description |
+|--------|-------------|
+| `codex` | Rule for running Codex prompts as build actions |
+| `codex_run` | Rule for running Codex prompts with `bazel run` |
+| `codex_test` | Rule for running Codex prompts as tests |
+| `CODEX_TOOLCHAIN_TYPE` | Toolchain type for build actions (exec platform) |
+| `CODEX_RUNTIME_TOOLCHAIN_TYPE` | Toolchain type for test/run (target platform) |
+| `CodexInfo` | Provider with `binary` field containing the Codex executable |
+| `codex_toolchain` | Rule for defining custom toolchain implementations |
+| `LocalAuthInfo` | Provider for local auth flag |
+| `local_auth_flag` | Rule for defining local auth build settings |
+
+## Supported platforms
+
+- `darwin_arm64` (macOS Apple Silicon)
+- `darwin_amd64` (macOS Intel)
+- `linux_arm64`
+- `linux_amd64`
+- `windows_arm64`
+- `windows_amd64`
 
 ## Requirements
 

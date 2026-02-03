@@ -1,6 +1,6 @@
 """Codex run rule that creates an executable to run prompts via bazel run."""
 
-load("@tools_codex//codex:defs.bzl", "CODEX_TOOLCHAIN_TYPE")
+load(":toolchain.bzl", "CODEX_RUNTIME_TOOLCHAIN_TYPE")
 
 def _shell_quote(s):
     """Quote a string for safe use in shell scripts."""
@@ -8,7 +8,7 @@ def _shell_quote(s):
 
 def _codex_run_impl(ctx):
     """Implementation of the codex_run rule."""
-    toolchain = ctx.toolchains[CODEX_TOOLCHAIN_TYPE]
+    toolchain = ctx.toolchains[CODEX_RUNTIME_TOOLCHAIN_TYPE]
     codex_binary = toolchain.codex_info.binary
 
     # Build the prompt
@@ -77,6 +77,6 @@ codex_run = rule(
         ),
     },
     executable = True,
-    toolchains = [CODEX_TOOLCHAIN_TYPE],
+    toolchains = [CODEX_RUNTIME_TOOLCHAIN_TYPE],
     doc = "Creates an executable that runs Codex with the given prompt. Use with 'bazel run'.",
 )

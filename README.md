@@ -37,6 +37,16 @@ codex = use_extension("@rules_codex//codex:extensions.bzl", "codex")
 codex.download(use_latest = True)
 ```
 
+## Running Codex Directly
+
+To launch Codex interactively using the hermetic toolchain:
+
+```bash
+bazel run @rules_codex
+```
+
+This runs the Codex CLI in interactive mode within your workspace.
+
 ## Usage
 
 ```python

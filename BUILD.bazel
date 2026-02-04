@@ -1,6 +1,13 @@
 # Root BUILD file for rules_codex
 
-load("//codex:defs.bzl", "local_auth_flag")
+load("//codex:defs.bzl", "codex_run", "local_auth_flag")
+
+# Default target for `bazel run @rules_codex`
+codex_run(
+    name = "rules_codex",
+    interactive = True,
+    visibility = ["//visibility:public"],
+)
 
 local_auth_flag(
     name = "local_auth",

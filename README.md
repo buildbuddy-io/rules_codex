@@ -13,7 +13,7 @@ bazel_dep(name = "rules_codex", version = "0.1.0")
 git_override(
     module_name = "rules_codex",
     remote = "https://github.com/buildbuddy-io/rules_codex.git",
-    commit = "4a9eb3c938d86ebe069560c3942b319783757e8c",
+    commit = "053e6d55e8535d21079f611e35fc1620235a3eca",
 )
 ```
 

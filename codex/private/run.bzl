@@ -31,16 +31,18 @@ def _codex_run_impl(ctx):
         full_prompt = full_prompt + " Write the output to " + ctx.attr.out
 
     subcommand = "" if ctx.attr.interactive else "exec --skip-git-repo-check --yolo"
+    prompt_arg = _shell_quote(full_prompt) if full_prompt else ""
+
     script = ctx.actions.declare_file(ctx.label.name + ".sh")
     script_content = """#!/bin/bash
 set -e
 SCRIPT_DIR="$(pwd)"
 cd "$BUILD_WORKING_DIRECTORY"
-exec "$SCRIPT_DIR/{codex_binary}" {subcommand} {prompt} "$@"
+exec "$SCRIPT_DIR/{codex_binary}" {subcommand} {prompt_arg} "$@"
 """.format(
         codex_binary = codex_binary.short_path,
         subcommand = subcommand,
-        prompt = _shell_quote(full_prompt),
+        prompt_arg = prompt_arg,
     )
     ctx.actions.write(
         output = script,
@@ -62,7 +64,6 @@ codex_run = rule(
             doc = "Input files to be processed by the prompt.",
         ),
         "prompt": attr.string(
-            mandatory = True,
             doc = "The prompt to send to Codex.",
         ),
         "out": attr.string(
